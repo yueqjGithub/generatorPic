@@ -8,8 +8,28 @@ $--color-danger: #EF3434;
 $--color-success: #0ABD9E;
 //-------深色字默认颜色-------
 $--color-font-primary: #2E384D;
-
+// 印章文字字体
+@font-face{
+  font-family: 'yzword';
+  src: url('../assets/font/方正书宋简体.ttf') format('truetype');
+  font-weight: normal;
+}
 // 手写字体
+@font-face{
+  font-family: 'sxzt0';
+  src: url('../assets/font/font0.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'sxzt1';
+  src: url('../assets/font/font1.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'sxzt2';
+  src: url('../assets/font/font2.ttf') format('truetype');
+  font-weight: normal;
+}
 @font-face{
   font-family: 'sxzt3';
   src: url('../assets/font/font3.ttf') format('truetype');
@@ -18,6 +38,26 @@ $--color-font-primary: #2E384D;
 @font-face{
   font-family: 'sxzt4';
   src: url('../assets/font/font4.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'sxzt5';
+  src: url('../assets/font/font5.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'sxzt6';
+  src: url('../assets/font/font6.otf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'cusCaoshu';
+  src: url('../assets/font/思雨聪聪草书体.ttf') format('truetype');
+  font-weight: normal;
+}
+@font-face{
+  font-family: 'cusXingshu';
+  src: url('../assets/font/黄彦文行书字体.ttf') format('truetype');
   font-weight: normal;
 }
 
