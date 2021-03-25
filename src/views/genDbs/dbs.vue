@@ -2,7 +2,7 @@
   <div class="content-container flex-row flex-jst-btw flex-ali-start">
     <div class="result-container beauty-scroll">
       <el-scrollbar>
-        <div class="full-width result">
+        <div class="full-width result" id="picResult" ref="picResult">
           <img src="@/assets/img/dbs1.jpg" alt="" class="dbsBg">
           <p class="sx-word"
           :style='{
@@ -239,7 +239,7 @@
             <el-input-number v-model="canvasOptions.width"></el-input-number>
           </el-form-item>
           <el-form-item label="高度" required>
-            <el-input-number v-model="canvasOptions.height"></el-input-number>
+            <el-input-number v-model="canvasOptions.height" disabled></el-input-number>
           </el-form-item>
           <el-form-item label="水平偏移量">
             <el-input-number v-model="canvasOptions.left"></el-input-number>
@@ -264,16 +264,37 @@
             </el-row>
           </el-row>
           <h3>文字设置</h3>
+          <el-form-item label="文字边距" required>
+            <el-input-number v-model="canvasOptions.distance" :step="0.1" :min="0" :max="1"></el-input-number>
+          </el-form-item>
           <el-form-item label="文字" required>
             <el-input v-model="canvasOptions.content" type="text"></el-input>
+          </el-form-item>
+          <el-form-item label="文字透明度" required>
+            <el-input-number v-model="canvasOptions.wordAlpha" :step="0.1" :min="0" :max="1"></el-input-number>
+          </el-form-item>
+          <el-form-item label="文字大小" required>
+            <el-input-number v-model="canvasOptions.wordFontSize" :min="0"></el-input-number>
+          </el-form-item>
+          <el-form-item label="编号大小" required>
+            <el-input-number v-model="canvasOptions.codeSize" :min="0"></el-input-number>
           </el-form-item>
           <el-form-item label="编号" required>
             <el-input v-model="canvasOptions.code" type="text"></el-input>
           </el-form-item>
+          <el-form-item label="噪点数量" required>
+            <el-input-number v-model="canvasOptions.noice" :min="0" :step="1000"></el-input-number>
+          </el-form-item>
           <el-row>
-            <el-button type="primary" size="small" @click="drawWord">生成印章文字</el-button>
+            <div class="pa-col-sm">
+              <el-button type="primary" size="small" @click="drawWord(canvasOptions.wordFontSize, canvasOptions.distance, canvasOptions.wordAlpha, canvasOptions.codeSize)">生成印章文字</el-button>
+              <el-button type="primary" size="small" @click="makeNoice(canvasOptions.noice)">增加噪点</el-button>
+            </div>
           </el-row>
         </el-form>
+        <div class="full-width flex-row flex-jst-center flex-ali-center pa-col-sm">
+          <el-button type="primary" @click="saveImage">保存图片</el-button>
+        </div>
       </el-scrollbar>
     </div>
   </div>
@@ -281,6 +302,8 @@
 
 <script>
 import { mapState } from 'vuex'
+import html2canvas from 'html2canvas'
+import { dataURLToBlob } from '@/utils/utils'
 import yz1 from '../../assets/img/1.png'
 import yz2 from '../../assets/img/2.png'
 import yz3 from '../../assets/img/3.png'
@@ -296,10 +319,15 @@ export default {
         height: 180,
         left: 13.8,
         top: 66.5,
-        alpha: 1,
+        alpha: 0.6,
+        wordAlpha: 0.6,
+        wordFontSize: 20,
+        codeSize: 13,
+        distance: 0.8,
         deg: 0,
         content: '',
-        code: ''
+        code: '',
+        noice: 1000
       },
       companyName: {
         content: 'xxxxxx有限公司',
@@ -357,11 +385,33 @@ export default {
     this.mc = this.$refs.myCav
   },
   watch: {
+    'canvasOptions.width': {
+      handler: function (val) {
+        this.canvasOptions.height = val
+      }
+    }
   },
   computed: {
     ...mapState(['fonts'])
   },
   methods: {
+    saveImage () {
+      const canvasID = this.$refs.picResult
+      const a = document.createElement('a')
+      html2canvas(canvasID).then(canvas => {
+        const dom = document.body.appendChild(canvas)
+        dom.style.display = 'none'
+        a.style.display = 'none'
+        document.body.removeChild(dom)
+        const blob = dataURLToBlob(dom.toDataURL('image/png'))
+        a.setAttribute('href', URL.createObjectURL(blob))
+        a.setAttribute('download', 'text' + '.png')
+        document.body.appendChild(a)
+        a.click()
+        URL.revokeObjectURL(blob)
+        document.body.removeChild(a)
+      })
+    },
     drawBg () {
       const vm = this
       vm.ctx = vm.mc.getContext('2d')
@@ -379,7 +429,7 @@ export default {
       vm.ctx.setTransform(1, 0, 0, 1, 0, 0)
       vm.ctx.clearRect(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
     },
-    drawWord () {
+    drawWord (fontSize = 20, distance = 0.8, alpha = 0.9, codeSize) {
       const vm = this
       const wordList = vm.canvasOptions.content.split('') // 计算角度，文字大概是编码的2倍
       const codeList = vm.canvasOptions.code.split('')
@@ -391,21 +441,57 @@ export default {
         vm.$message.error('印章编号不能为空')
         return false
       }
-      const angle = 1.5 * Math.PI / (wordList.length - 1) // 左右各留5度作为文字和编码的距离
-      vm.ctx.font = '24px yzword'
-      vm.ctx.color = 'red'
+      const angle = 1.25 * Math.PI / (wordList.length - 1) // 左右各留5度作为文字和编码的距离
+      vm.ctx.font = `bold ${fontSize}px 'yzword' `
+      // 文字颜色设置
+      const { data } = vm.ctx.getImageData(vm.canvasOptions.width / 2, vm.canvasOptions.height / 2, 1, 1)
+      vm.ctx.fillStyle = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3]})`
+      vm.ctx.globalAlpha = alpha
+      // vm.ctx.color = color
       wordList.forEach((item, idx) => {
         vm.ctx.save()
         vm.ctx.translate(vm.canvasOptions.width / 2, vm.canvasOptions.height / 2)
-        const start = (idx * angle) - 1.25 * Math.PI
-        const translateX = Math.cos(start) * ((vm.canvasOptions.width / 2) * 0.7)
-        const translateY = Math.sin(start) * ((vm.canvasOptions.height / 2) * 0.7)
+        const start = (idx * angle) - 1.125 * Math.PI
+        const translateX = Math.cos(start) * ((vm.canvasOptions.width / 2) * distance)
+        const translateY = Math.sin(start) * ((vm.canvasOptions.height / 2) * distance)
         // vm.ctx.textAlign = 'center'
         vm.ctx.translate(translateX, translateY)
         vm.ctx.rotate(start + (0.5 * Math.PI))
-        vm.ctx.fillText(item, -10, 10)
+        vm.ctx.fillText(item, -(fontSize / 2), (fontSize / 2))
         vm.ctx.restore()
       })
+      const angle1 = 0.45 * Math.PI / (codeList.length - 1)
+      vm.ctx.font = `bold ${codeSize}px 'yahei'`
+      codeList.forEach((item, idx) => {
+        vm.ctx.save()
+        vm.ctx.translate(vm.canvasOptions.width / 2, vm.canvasOptions.height / 2)
+        const start = 0.725 * Math.PI - (idx * angle1)
+        const translateX = Math.cos(start) * ((vm.canvasOptions.width / 2) * distance)
+        const translateY = Math.sin(start) * ((vm.canvasOptions.height / 2) * distance)
+        vm.ctx.translate(translateX, translateY)
+        vm.ctx.rotate(start - 0.5 * Math.PI)
+        vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
+        vm.ctx.restore()
+      })
+    },
+    makeNoice (count) {
+      const vm = this
+      let target = count
+      const imageData = vm.ctx.getImageData(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
+      for (let k = 0; k < imageData.data.length; k += 4) {
+        const r = imageData.data[k]
+        const a = imageData.data[k + 3]
+        if (r > 0) {
+          if (target > 0) {
+            target--
+            if (Math.random() > 0.95) {
+              imageData.data[k + 3] = a * (0.3 + Math.random() * 0.6)
+            }
+          }
+        }
+      }
+      vm.ctx.clearRect(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
+      vm.ctx.putImageData(imageData, 0, 0)
     }
   }
 }

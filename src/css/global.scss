@@ -95,7 +95,10 @@ body{
 .flex-4{flex:4;}
 .flex-wrap{flex-wrap: wrap;}
 .flex-nowrap{flex-wrap: nowrap;}
-
+.pa-col-sm{
+  padding-top: .12rem;
+  padding-bottom: .12rem;
+}
 // -------滚动条美化---------
 .el-drawer__body{
   overflow-y: scroll;
