@@ -30,7 +30,7 @@ export default {
       routerList: [
         { name: 'genDbs', path: '/genDbs', title: '生成邓白氏' },
         { name: 'genZz', path: '/genZz', title: '生成营业执照' },
-        { name: 'genGz', path: '/genGz', title: '生成章印' }
+        { name: 'genYz', path: '/genYz', title: '生成章印' }
       ]
     }
   },
