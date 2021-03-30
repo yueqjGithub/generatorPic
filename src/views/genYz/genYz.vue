@@ -68,6 +68,30 @@
           <el-form-item label="噪点数量" >
             <el-input-number v-model="canvasOptions.noice" :min="0" :step="1000"></el-input-number>
           </el-form-item>
+          <h3>投影设置</h3>
+          <el-row>
+            <el-form-item label="投影开关">
+              <el-checkbox v-model="canvasOptions.openFront">光源向投影</el-checkbox>
+              <el-checkbox v-model="canvasOptions.openBack">背向投影</el-checkbox>
+            </el-form-item>
+          </el-row>
+          <el-row>
+            <el-form-item label="光源角度">
+              <el-input-number v-model="canvasOptions.lightDeg" :step="1"></el-input-number>
+            </el-form-item>
+            <el-form-item label="光源投影色">
+              <el-color-picker v-model="canvasOptions.frontColor"></el-color-picker>
+            </el-form-item>
+            <el-form-item label="光源投影距离">
+              <el-input-number v-model="canvasOptions.frontDistance" :step="0.1" :min="0"></el-input-number>
+            </el-form-item>
+            <el-form-item label="背向投影色">
+              <el-color-picker v-model="canvasOptions.backColor"></el-color-picker>
+            </el-form-item>
+            <el-form-item label="背向投影距离">
+              <el-input-number v-model="canvasOptions.backDistance" :step="0.1" :min="0"></el-input-number>
+            </el-form-item>
+          </el-row>
           <el-row>
             <div class="pa-col-sm">
               <el-button type="primary" size="small" @click="drawWord(canvasOptions.wordFontSize, canvasOptions.distance, canvasOptions.wordAlpha, canvasOptions.codeSize)">生成印章文字</el-button>
@@ -108,7 +132,14 @@ export default {
         content: '锦江市场监督管理',
         code: '501398266',
         noice: 1000,
-        color: '#68341f'
+        color: '#582A15',
+        frontColor: '#737070',
+        lightDeg: 28,
+        frontDistance: 0.1,
+        backColor: '#0E0A0A',
+        backDistance: 1.3,
+        openFront: false,
+        openBack: false
       }
     }
   },
@@ -150,8 +181,10 @@ export default {
     },
     restore () {
       const vm = this
-      vm.ctx.setTransform(1, 0, 0, 1, 0, 0)
-      vm.ctx.clearRect(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
+      if (vm.ctx) {
+        vm.ctx.setTransform(1, 0, 0, 1, 0, 0)
+        vm.ctx.clearRect(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
+      }
     },
     drawWord (fontSize = 20, distance = 0.8, alpha = 0.9, codeSize) {
       const vm = this
@@ -183,6 +216,26 @@ export default {
         vm.ctx.rotate(start + (0.5 * Math.PI))
         vm.ctx.scale(-1, 1)
         vm.ctx.fillText(item, -(fontSize / 2), (fontSize / 2))
+        if (vm.canvasOptions.openFront) {
+          vm.ctx.globalCompositeOperation = 'destination-over'
+          vm.ctx.fillStyle = vm.canvasOptions.frontColor
+          const frontTarget = (vm.canvasOptions.lightDeg * Math.PI / 180) - start - 0.5 * Math.PI
+          const frontX = Math.cos(frontTarget) * vm.canvasOptions.frontDistance
+          const frontY = Math.sin(frontTarget) * vm.canvasOptions.frontDistance
+          vm.ctx.translate(frontX, frontY)
+          vm.ctx.fillText(item, -(fontSize / 2), (fontSize / 2))
+          vm.ctx.translate(-frontX, -frontY)
+        }
+        // 背向投影
+        if (vm.canvasOptions.openBack) {
+          vm.ctx.globalCompositeOperation = 'destination-over'
+          vm.ctx.fillStyle = vm.canvasOptions.backColor
+          const backTarget = ((vm.canvasOptions.lightDeg + 180) * Math.PI / 180) - start - 0.5 * Math.PI
+          const backX = Math.cos(backTarget) * vm.canvasOptions.backDistance
+          const backY = Math.sin(backTarget) * vm.canvasOptions.backDistance
+          vm.ctx.translate(backX, backY)
+          vm.ctx.fillText(item, -(fontSize / 2), (fontSize / 2))
+        }
         vm.ctx.restore()
       })
       const angle1 = 0.45 * Math.PI / (codeList.length - 1)
@@ -201,6 +254,27 @@ export default {
         // vm.ctx.fillStyle = '#fff'
         // vm.ctx.translate(-1, 0)
         // vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
+        // 光源向投影
+        if (vm.canvasOptions.openFront) {
+          vm.ctx.globalCompositeOperation = 'destination-over'
+          vm.ctx.fillStyle = vm.canvasOptions.frontColor
+          const frontTarget = (vm.canvasOptions.lightDeg * Math.PI / 180) - start + 0.5 * Math.PI
+          const frontX = Math.cos(frontTarget) * vm.canvasOptions.frontDistance
+          const frontY = Math.sin(frontTarget) * vm.canvasOptions.frontDistance
+          vm.ctx.translate(frontX, frontY)
+          vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
+          vm.ctx.translate(-frontX, -frontY)
+        }
+        // 背向投影
+        if (vm.canvasOptions.openBack) {
+          vm.ctx.globalCompositeOperation = 'destination-over'
+          vm.ctx.fillStyle = vm.canvasOptions.backColor
+          const backTarget = ((vm.canvasOptions.lightDeg + 180) * Math.PI / 180) - start + 0.5 * Math.PI
+          const backX = Math.cos(backTarget) * vm.canvasOptions.backDistance
+          const backY = Math.sin(backTarget) * vm.canvasOptions.backDistance
+          vm.ctx.translate(backX, backY)
+          vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
+        }
         vm.ctx.restore()
       })
     },
