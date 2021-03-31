@@ -309,9 +309,9 @@ export default {
         vm.ctx.translate(x, y)
         const gradient = vm.ctx.createRadialGradient(0, 0, 0, Math.random() * size, Math.random() * size, Math.random() * size)
         const gradientCount = Math.floor(Math.random() * 5)
-        gradient.addColorStop(0, `rgba(20,20,20,${Math.random()})`)
+        gradient.addColorStop(0, `rgba(30,30,30,${Math.random()})`)
         for (let j = 0; j < gradientCount; j++) {
-          gradient.addColorStop(Math.random(), `rgba(20,20,20,${Math.random()})`)
+          gradient.addColorStop(Math.random(), `rgba(30,30,30,${Math.random()})`)
         }
         gradient.addColorStop(1, 'transparent')
         vm.ctx.fillStyle = gradient

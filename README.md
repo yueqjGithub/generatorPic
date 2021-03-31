@@ -1,5 +1,6 @@
 # genpic
-
+##description
+处理照片，自行盖章
 ## Project setup
 ```
 npm install
