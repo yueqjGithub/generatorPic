@@ -3,7 +3,8 @@
     <div class="result-container beauty-scroll">
       <el-scrollbar>
         <div class="full-width result" id="picResult" ref="picResult">
-          <img src="@/assets/img/dbs1.jpg" alt="" class="dbsBg">
+          <img :src="bgInfo" alt="" class="dbsBg" v-if="bgInfo">
+          <img src="@/assets/img/dbs1.jpg" alt="" class="dbsBg" v-else>
           <p class="sx-word"
           :style='{
             top: `${companyName.top}%`,
@@ -76,6 +77,8 @@
     </div>
     <div class="options-container beauty-scroll">
       <el-scrollbar>
+        <el-button type="primary" @click="emitUpload">自定义背景</el-button>
+        <input type="file" accept="image/*"  capture="camera" ref="uploadInput" @change="doUpload($event)" style="display: none;"/>
         <h2>公司名称设置</h2>
         <el-form :model="companyName" inline label-width='80px' label-position='right' size="mini" class="cus-form">
           <el-form-item label="名称">
@@ -313,6 +316,7 @@ export default {
     return {
       mc: null,
       ctx: null,
+      bgInfo: null,
       curYzBg: undefined, // 当前选择的印章背景
       canvasOptions: {
         width: 180,
@@ -395,6 +399,18 @@ export default {
     ...mapState(['fonts'])
   },
   methods: {
+    emitUpload () {
+      this.$refs.uploadInput.click()
+    },
+    doUpload (e) {
+      const vm = this
+      const target = e.target.files[0]
+      const reader = new FileReader()
+      reader.readAsDataURL(target)
+      reader.onload = () => {
+        vm.bgInfo = reader.result
+      }
+    },
     saveImage () {
       const canvasID = this.$refs.picResult
       const a = document.createElement('a')

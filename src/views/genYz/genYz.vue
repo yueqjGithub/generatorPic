@@ -3,7 +3,8 @@
     <div class="result-container beauty-scroll">
       <el-scrollbar>
         <div class="full-width result" id="picResult" ref="picResult">
-          <img src="@/assets/img/yzbg.jpg" alt="" class="dbsBg">
+          <img :src="bgInfo" alt="" class="dbsBg" v-if="bgInfo">
+          <img src="@/assets/img/yzbg.jpg" alt="" class="dbsBg" v-else>
           <canvas ref="myCav" id="myCav" :width="canvasOptions.width" :height="canvasOptions.height"
                   :style="{
             left: `${canvasOptions.left}%`,
@@ -16,6 +17,8 @@
     </div>
     <div class="options-container beauty-scroll">
       <el-scrollbar>
+        <el-button type="primary" @click="emitUpload">自定义背景</el-button>
+        <input type="file" accept="image/*"  capture="camera" ref="uploadInput" @change="doUpload($event)" style="display: none;"/>
         <div class="full-width flex-row flex-jst-btw flex-ali-center">
           <h2>印章设置(带*为非实时属性)</h2>
           <el-button size="small" type="primary" @click="restore">清除印章</el-button>
@@ -65,8 +68,12 @@
           <el-form-item label="编号" >
             <el-input v-model="canvasOptions.code" type="text"></el-input>
           </el-form-item>
-          <el-form-item label="噪点数量" >
-            <el-input-number v-model="canvasOptions.noice" :min="0" :step="1000"></el-input-number>
+          <h3>污渍设置</h3>
+          <el-form-item label="污渍数量" >
+            <el-input-number v-model="canvasOptions.uziCount" :min="0" :step="1"></el-input-number>
+          </el-form-item>
+          <el-form-item label="污渍大小" >
+            <el-input-number v-model="canvasOptions.uziSize" :min="0" :step="0.1"></el-input-number>
           </el-form-item>
           <h3>投影设置</h3>
           <el-row>
@@ -95,7 +102,7 @@
           <el-row>
             <div class="pa-col-sm">
               <el-button type="primary" size="small" @click="drawWord(canvasOptions.wordFontSize, canvasOptions.distance, canvasOptions.wordAlpha, canvasOptions.codeSize)">生成印章文字</el-button>
-              <el-button type="primary" size="small" @click="makeNoice(canvasOptions.noice)">增加噪点</el-button>
+<!--              <el-button type="primary" size="small" @click="makeNoice(canvasOptions.uziCount)">增加污渍</el-button>-->
             </div>
           </el-row>
         </el-form>
@@ -116,6 +123,7 @@ export default {
     return {
       mc: null,
       ctx: null,
+      bgInfo: null,
       canvasOptions: {
         width: 470,
         height: 460,
@@ -138,8 +146,10 @@ export default {
         frontDistance: 0.1,
         backColor: '#0E0A0A',
         backDistance: 1.3,
-        openFront: false,
-        openBack: false
+        openFront: true,
+        openBack: true,
+        uziCount: 20,
+        uziSize: 5.5
       }
     }
   },
@@ -162,6 +172,18 @@ export default {
     this.mc = this.$refs.myCav
   },
   methods: {
+    emitUpload () {
+      this.$refs.uploadInput.click()
+    },
+    doUpload (e) {
+      const vm = this
+      const target = e.target.files[0]
+      const reader = new FileReader()
+      reader.readAsDataURL(target)
+      reader.onload = () => {
+        vm.bgInfo = reader.result
+      }
+    },
     saveImage () {
       const canvasID = this.$refs.picResult
       const a = document.createElement('a')
@@ -216,6 +238,8 @@ export default {
         vm.ctx.rotate(start + (0.5 * Math.PI))
         vm.ctx.scale(-1, 1)
         vm.ctx.fillText(item, -(fontSize / 2), (fontSize / 2))
+        // 污渍增加
+        vm.makeNoice(codeSize / 2, vm.canvasOptions.uziSize)
         if (vm.canvasOptions.openFront) {
           vm.ctx.globalCompositeOperation = 'destination-over'
           vm.ctx.fillStyle = vm.canvasOptions.frontColor
@@ -250,10 +274,8 @@ export default {
         vm.ctx.rotate(start - 0.5 * Math.PI)
         vm.ctx.scale(-1, 1)
         vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
-        // vm.ctx.globalCompositeOperation = 'destination-over'
-        // vm.ctx.fillStyle = '#fff'
-        // vm.ctx.translate(-1, 0)
-        // vm.ctx.fillText(item, -(codeSize / 2), (codeSize / 2))
+        // 污渍增加
+        vm.makeNoice(codeSize / 2, vm.canvasOptions.uziSize)
         // 光源向投影
         if (vm.canvasOptions.openFront) {
           vm.ctx.globalCompositeOperation = 'destination-over'
@@ -278,24 +300,24 @@ export default {
         vm.ctx.restore()
       })
     },
-    makeNoice (count) {
+    makeNoice (r, size) {
       const vm = this
-      let target = count
-      const imageData = vm.ctx.getImageData(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
-      for (let k = 0; k < imageData.data.length; k += 4) {
-        const r = imageData.data[k]
-        const a = imageData.data[k + 3]
-        if (r > 0) {
-          if (target > 0) {
-            target--
-            if (Math.random() > 0.95) {
-              imageData.data[k + 3] = a * (0.3 + Math.random() * 0.6)
-            }
-          }
+      for (let k = 0; k < vm.canvasOptions.uziCount; k++) {
+        const x = r * (1 - Math.random() * 2)
+        const y = r * (1 - Math.random() * 2)
+        vm.ctx.save()
+        vm.ctx.translate(x, y)
+        const gradient = vm.ctx.createRadialGradient(0, 0, 0, Math.random() * size, Math.random() * size, Math.random() * size)
+        const gradientCount = Math.floor(Math.random() * 5)
+        gradient.addColorStop(0, `rgba(20,20,20,${Math.random()})`)
+        for (let j = 0; j < gradientCount; j++) {
+          gradient.addColorStop(Math.random(), `rgba(20,20,20,${Math.random()})`)
         }
+        gradient.addColorStop(1, 'transparent')
+        vm.ctx.fillStyle = gradient
+        vm.ctx.fillRect(0, 0, Math.random() * size, Math.random() * size)
+        vm.ctx.restore()
       }
-      vm.ctx.clearRect(0, 0, vm.canvasOptions.width, vm.canvasOptions.height)
-      vm.ctx.putImageData(imageData, 0, 0)
     }
   }
 }
